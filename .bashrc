@@ -1,17 +1,117 @@
+# ~/.bashrc: executed by bash(1) for non-login shells.
+# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+# for examples
+
+# If not running interactively, don't do anything
+[ -z "$PS1" ] && return
+
+# don't put duplicate lines in the history. See bash(1) for more options
+# ... or force ignoredups and ignorespace
+HISTCONTROL=ignoredups:ignorespace
+
+# append to the history file, don't overwrite it
+shopt -s histappend
+
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color) color_prompt=yes;;
+esac
+
+# uncomment for a colored prompt, if the terminal has the capability; turned
+# off by default to not distract the user: the focus in a terminal window
+# should be on the output of commands, not on the prompt
+force_color_prompt=yes
+
+if [ -n "$force_color_prompt" ]; then
+    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+	# We have color support; assume it's compliant with Ecma-48
+	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	# a case would tend to support setf rather than setaf.)
+	color_prompt=yes
+    else
+	color_prompt=
+    fi
+fi
+
+if [ "$color_prompt" = yes ]; then
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+else
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
+
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    #alias dir='dir --color=auto'
+    #alias vdir='vdir --color=auto'
+
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# some more ls aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+#if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+#    . /etc/bash_completion
+#fi
+
 ###############################################################################
 # IDENTIFICATION OF LOCAL HOST: CHANGE TO YOUR COMPUTER NAME
 ###############################################################################
- 
-PRIMARYHOST="localhost"
- 
- 
+
+PRIMARYHOST="tom"
+
+
 ###############################################################################
 # PROMPT
 ###############################################################################
- 
+
 ###############################################################################
 # Terminal Title
- 
+
 set_terminal_title() {
     if [[ -z $@ ]]
     then
@@ -23,10 +123,12 @@ set_terminal_title() {
 alias stt='set_terminal_title'
 STANDARD_PROMPT_COMMAND='history -a ; echo -ne "\033]0;${TERMINAL_TITLE}\007"'
 PROMPT_COMMAND=$STANDARD_PROMPT_COMMAND
- 
+
+
+
 ###############################################################################
 # Parses Git info for prompt
- 
+
 function _set_git_envar_info {
     GIT_BRANCH=""
     GIT_HEAD=""
@@ -64,23 +166,24 @@ function _set_git_envar_info {
     gdir=$(cd $GIT_ROOT; pwd -P)
     export gdir
 }
- 
+
 ###############################################################################
 # Composes prompt.
 function setps1 {
- 
+
     # Help message.
     local USAGE="Usage: setps1 [none] [screen=] [user=] [dir=] [git=] [wrap=] [which-python=]"
- 
+
     if [[ (-z $@) || ($@ == "*-h*") || ($@ == "*--h*") ]]
     then
         echo $USAGE
         return
     fi
- 
+
     # Prompt colors.
     local CLEAR="\[\033[0m\]"
     #local STY_COLOR='\[\033[1;37;41m\]'
+    local HOST_COLOR='\[\033[1;34m\]'
     local STY_COLOR='\[\033[1;33m\]'
     local PROMPT_COLOR='\[\033[0;35m\]'
     #local PROMPT_COLOR='\[\033[1;94m\]'
@@ -91,16 +194,16 @@ function setps1 {
     local GIT_BRANCH_COLOR=$CLEAR'\[\033[1;90m\]\[\033[4;90m\]'
     local GIT_HEAD_COLOR=$CLEAR'\[\033[1;32m\]'
     local GIT_STATE_COLOR=$CLEAR'\[\033[1;31m\]'
- 
+
     # Hostname-based colors in prompt.
     if [[ $HOSTNAME != $PRIMARYHOST ]]
     then
         USER_HOST_COLOR=$REMOTE_USER_HOST_COLOR
     fi
- 
+
     # Start with empty prompt.
     local PROMPTSTR=""
- 
+
     # Set screen session id.
     if [[ $@ == *screen=1* ]]
     then
@@ -112,19 +215,19 @@ function setps1 {
             local SCRTAG="$STY_COLOR(STY ${STY%%.*})$CLEAR" # get screen session number
         fi
     fi
- 
+
     # Set user@host.
     if [[ $@ == *user=1* ]]
     then
          PROMPTSTR=$PROMPTSTR"$USER_HOST_COLOR\\u@\\h$CLEAR"
     fi
- 
+    PROMPTSTR=$PROMPTSTR$HOST_COLOR"\H"
     # Set directory.
     if [[ -n $PROMPTSTR && ($@ == *dir=1* || $@ == *dir=2*) ]]
     then
             PROMPTSTR=$PROMPTSTR"$PROMPT_COLOR:"
     fi
- 
+
     if [[ $@ == *dir=1* ]]
     then
         PROMPTSTR=$PROMPTSTR"$PROMPT_DIR_COLOR\W$CLEAR"
@@ -132,8 +235,8 @@ function setps1 {
     then
         PROMPTSTR=$PROMPTSTR"$PROMPT_DIR_COLOR\$(pwd -P)$CLEAR"
     fi
- 
- 
+
+
     # set git
     if [[ $(which git 2> /dev/null) && $@ == *git=1* ]]
     then
@@ -143,7 +246,7 @@ function setps1 {
     else
         PROMPT_COMMAND=$STANDARD_PROMPT_COMMAND
     fi
- 
+
     # Set wrap.
     if [[ $@ == *wrap=1* ]]
     then
@@ -151,7 +254,7 @@ function setps1 {
     else
         local WRAP=""
     fi
- 
+
     # Set wrap.
     if [[ $@ == *which-python=1* ]]
     then
@@ -159,7 +262,7 @@ function setps1 {
     else
         local WHICHPYTHON=""
     fi
- 
+
     # Finalize.
     if [[ -z $PROMPTSTR || $@ == none ]]
     then
@@ -167,13 +270,13 @@ function setps1 {
     else
         PROMPTSTR="$TITLEBAR\n$SCRTAG${PROMPT_COLOR}[$CLEAR$PROMPTSTR$PROMPT_COLOR]$WRAP$WHICHPYTHON$PROMPT_COLOR\$$CLEAR "
     fi
- 
+
     # Set.
     PS1=$PROMPTSTR
     PS2='> '
     PS4='+ '
 }
- 
+
 alias setps1-long='setps1 screen=1 user=1 dir=2 git=1 wrap=1'
 alias setps1-short='setps1 screen=1 user=1 dir=1 git=1 wrap=0'
 alias setps1-default='setps1-short'
@@ -191,7 +294,7 @@ then
 else
     setps1 screen=1 user=1 dir=2 git=1 wrap=0 which-python=0
 fi
- 
+
 setps1 screen=0 user=0 dir=2 git=1 wrap=0 which-python=0
 
 
